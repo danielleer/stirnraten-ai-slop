@@ -152,6 +152,112 @@
   }
   .btn-start:active { transform: scale(.97); box-shadow: none; }
 
+  .btn-settings {
+    position: absolute;
+    top: 20px; right: 24px;
+    width: 44px; height: 44px;
+    border-radius: 50%; border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted); font-size: 20px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: border-color .15s, color .15s;
+  }
+  .btn-settings:active { border-color: var(--text); color: var(--text); }
+
+  /* ── SETTINGS ── */
+  #screen-settings {
+    background: var(--bg);
+    padding: 24px 40px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex-direction: column;
+    gap: 0;
+  }
+  .settings-header {
+    width: 100%;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .settings-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px; letter-spacing: 3px;
+  }
+  .btn-back {
+    padding: 10px 22px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 50px; color: var(--text);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px; letter-spacing: 2px;
+    cursor: pointer; transition: border-color .15s;
+  }
+  .btn-back:active { border-color: var(--text); }
+
+  .packs-grid {
+    width: 100%;
+    display: flex; flex-wrap: wrap; gap: 14px;
+  }
+  .pack-card {
+    flex: 1 1 calc(50% - 7px);
+    min-width: 220px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 18px;
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+    position: relative;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .pack-card.active {
+    background: #0b1f15;
+  }
+  .pack-icon {
+    font-size: 32px; flex-shrink: 0;
+    width: 52px; height: 52px;
+    border-radius: 12px;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pack-info { flex: 1; }
+  .pack-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px; letter-spacing: 1px;
+    line-height: 1; margin-bottom: 4px;
+  }
+  .pack-desc {
+    font-size: 11px; color: var(--muted); line-height: 1.4;
+  }
+  .pack-count {
+    font-size: 10px; margin-top: 6px;
+    color: var(--muted); letter-spacing: 1px; text-transform: uppercase;
+  }
+  .pack-toggle {
+    width: 44px; height: 26px; border-radius: 13px;
+    background: var(--border); flex-shrink: 0;
+    position: relative; transition: background .2s;
+  }
+  .pack-toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 20px; height: 20px;
+    border-radius: 50%; background: var(--muted);
+    transition: transform .2s, background .2s;
+  }
+  .pack-card.active .pack-toggle {
+    background: #0b3a22;
+  }
+  .pack-card.active .pack-toggle::after {
+    transform: translateX(18px);
+    background: var(--green);
+  }
+
+  .settings-note {
+    margin-top: 20px;
+    font-size: 12px; color: var(--muted); letter-spacing: 1px;
+    width: 100%;
+  }
+
   /* ── PERMISSION ── */
   #screen-perm {
     background: var(--bg);
@@ -396,6 +502,7 @@
 
 <!-- ── HOME ── -->
 <div class="screen" id="screen-home">
+  <button class="btn-settings" id="btn-settings" title="Einstellungen">⚙️</button>
   <div class="home-left">
     <div class="logo">STIRN<span>RATEN</span></div>
     <div class="tagline">Das Wort-Rate-Spiel</div>
@@ -412,6 +519,18 @@
     </div>
     <button class="btn-start" id="btn-start">SPIELEN</button>
   </div>
+</div>
+
+<!-- ── SETTINGS ── -->
+<div class="screen hidden" id="screen-settings">
+  <div class="settings-header">
+    <div class="settings-title">WORTPAKETE</div>
+    <button class="btn-back" id="btn-back">← ZURÜCK</button>
+  </div>
+  <div class="packs-grid" id="packs-grid">
+    <!-- rendered by JS -->
+  </div>
+  <div class="settings-note" id="settings-note"></div>
 </div>
 
 <!-- ── PERMISSION ── -->
@@ -514,81 +633,59 @@
 })();
 
 // ══════════════════════════════════════════════
-// WORD LIST — German everyday words by category
+// EXPANSION PACKS — registry
 // ══════════════════════════════════════════════
-const WORDS = [
-  // Tiere
-  { w: "Elefant", c: "Tier" }, { w: "Pinguin", c: "Tier" }, { w: "Giraffe", c: "Tier" },
-  { w: "Krokodil", c: "Tier" }, { w: "Delfin", c: "Tier" }, { w: "Hamster", c: "Tier" },
-  { w: "Papagei", c: "Tier" }, { w: "Schildkröte", c: "Tier" }, { w: "Nashorn", c: "Tier" },
-  { w: "Flamingo", c: "Tier" }, { w: "Kaninchen", c: "Tier" }, { w: "Eichhörnchen", c: "Tier" },
-  { w: "Pferd", c: "Tier" }, { w: "Schmetterling", c: "Tier" }, { w: "Biene", c: "Tier" },
-  { w: "Oktopus", c: "Tier" }, { w: "Zebra", c: "Tier" }, { w: "Löwe", c: "Tier" },
-  { w: "Adler", c: "Tier" }, { w: "Wal", c: "Tier" }, { w: "Fledermaus", c: "Tier" },
-  { w: "Gorilla", c: "Tier" }, { w: "Fuchs", c: "Tier" }, { w: "Igel", c: "Tier" },
-  { w: "Hase", c: "Tier" }, { w: "Reh", c: "Tier" }, { w: "Wolf", c: "Tier" },
-
-  // Essen & Trinken
-  { w: "Spaghetti", c: "Essen" }, { w: "Schnitzel", c: "Essen" }, { w: "Ananas", c: "Essen" },
-  { w: "Schokolade", c: "Essen" }, { w: "Käsekuchen", c: "Essen" }, { w: "Brezel", c: "Essen" },
-  { w: "Marzipan", c: "Essen" }, { w: "Gulasch", c: "Essen" }, { w: "Waffel", c: "Essen" },
-  { w: "Erdbeere", c: "Essen" }, { w: "Pfannkuchen", c: "Essen" }, { w: "Avocado", c: "Essen" },
-  { w: "Wassermelone", c: "Essen" }, { w: "Brötchen", c: "Essen" }, { w: "Joghurt", c: "Essen" },
-  { w: "Apfelstrudel", c: "Essen" }, { w: "Tiramisu", c: "Essen" }, { w: "Currywurst", c: "Essen" },
-  { w: "Limo", c: "Essen" }, { w: "Espresso", c: "Essen" }, { w: "Smoothie", c: "Essen" },
-
-  // Berufe
-  { w: "Feuerwehrmann", c: "Beruf" }, { w: "Astronaut", c: "Beruf" }, { w: "Bäcker", c: "Beruf" },
-  { w: "Tischler", c: "Beruf" }, { w: "Pilot", c: "Beruf" }, { w: "Apotheker", c: "Beruf" },
-  { w: "Schauspieler", c: "Beruf" }, { w: "Elektriker", c: "Beruf" }, { w: "Briefträger", c: "Beruf" },
-  { w: "Tierarzt", c: "Beruf" }, { w: "Richter", c: "Beruf" }, { w: "Koch", c: "Beruf" },
-  { w: "Sänger", c: "Beruf" }, { w: "Lehrer", c: "Beruf" }, { w: "Gärtner", c: "Beruf" },
-  { w: "Zahnarzt", c: "Beruf" }, { w: "Detektiv", c: "Beruf" }, { w: "Kapitän", c: "Beruf" },
-
-  // Sport & Freizeit
-  { w: "Fallschirmspringen", c: "Sport" }, { w: "Bogenschießen", c: "Sport" }, { w: "Turnen", c: "Sport" },
-  { w: "Surfen", c: "Sport" }, { w: "Klettern", c: "Sport" }, { w: "Drachenfliegen", c: "Sport" },
-  { w: "Schachspielen", c: "Sport" }, { w: "Jonglieren", c: "Sport" }, { w: "Tischtennis", c: "Sport" },
-  { w: "Fechten", c: "Sport" }, { w: "Reiten", c: "Sport" }, { w: "Tanzen", c: "Sport" },
-  { w: "Angeln", c: "Sport" }, { w: "Rudern", c: "Sport" }, { w: "Boxen", c: "Sport" },
-
-  // Dinge im Haushalt
-  { w: "Waschmaschine", c: "Zuhause" }, { w: "Backofen", c: "Zuhause" }, { w: "Fernseher", c: "Zuhause" },
-  { w: "Kühlschrank", c: "Zuhause" }, { w: "Staubsauger", c: "Zuhause" }, { w: "Sofa", c: "Zuhause" },
-  { w: "Bügeleisen", c: "Zuhause" }, { w: "Vorhang", c: "Zuhause" }, { w: "Briefkasten", c: "Zuhause" },
-  { w: "Werkzeugkasten", c: "Zuhause" }, { w: "Lampe", c: "Zuhause" }, { w: "Thermometer", c: "Zuhause" },
-
-  // Orte
-  { w: "Leuchtturm", c: "Ort" }, { w: "Rathausplatz", c: "Ort" }, { w: "Friedhof", c: "Ort" },
-  { w: "Bahnhof", c: "Ort" }, { w: "Tierpark", c: "Ort" }, { w: "Schwimmbad", c: "Ort" },
-  { w: "Bibliothek", c: "Ort" }, { w: "Supermarkt", c: "Ort" }, { w: "Museum", c: "Ort" },
-  { w: "Kaufhaus", c: "Ort" }, { w: "Flughafen", c: "Ort" }, { w: "Schloss", c: "Ort" },
-  { w: "Kirche", c: "Ort" }, { w: "Stadion", c: "Ort" }, { w: "Strand", c: "Ort" },
-
-  // Fahrzeuge
-  { w: "U-Boot", c: "Fahrzeug" }, { w: "Heißluftballon", c: "Fahrzeug" }, { w: "Hubschrauber", c: "Fahrzeug" },
-  { w: "Straßenbahn", c: "Fahrzeug" }, { w: "Motorrad", c: "Fahrzeug" }, { w: "Traktor", c: "Fahrzeug" },
-  { w: "Formel-1-Auto", c: "Fahrzeug" }, { w: "Segelboot", c: "Fahrzeug" }, { w: "Seilbahn", c: "Fahrzeug" },
-  { w: "Dampflok", c: "Fahrzeug" }, { w: "Gondel", c: "Fahrzeug" },
-
-  // Natur
-  { w: "Vulkan", c: "Natur" }, { w: "Wasserfall", c: "Natur" }, { w: "Gletscher", c: "Natur" },
-  { w: "Regenbogen", c: "Natur" }, { w: "Blitzschlag", c: "Natur" }, { w: "Sanddüne", c: "Natur" },
-  { w: "Tropenhöhle", c: "Natur" }, { w: "Meerestiefe", c: "Natur" }, { w: "Tornado", c: "Natur" },
-  { w: "Geysir", c: "Natur" }, { w: "Lavastrom", c: "Natur" }, { w: "Schneeflocke", c: "Natur" },
-
-  // Film & TV
-  { w: "Roboter", c: "Film & TV" }, { w: "Vampir", c: "Film & TV" }, { w: "Pirat", c: "Film & TV" },
-  { w: "Zauberer", c: "Film & TV" }, { w: "Dinosaurier", c: "Film & TV" }, { w: "Zeitreise", c: "Film & TV" },
-  { w: "Superheld", c: "Film & TV" }, { w: "Mumie", c: "Film & TV" }, { w: "Alien", c: "Film & TV" },
-  { w: "Zirkus", c: "Film & TV" }, { w: "Schatzinsel", c: "Film & TV" },
-
-  // Alltag & Handlungen
-  { w: "Schnarchen", c: "Aktion" }, { w: "Gähnen", c: "Aktion" }, { w: "Niesen", c: "Aktion" },
-  { w: "Winken", c: "Aktion" }, { w: "Stolpern", c: "Aktion" }, { w: "Flüstern", c: "Aktion" },
-  { w: "Nasebohren", c: "Aktion" }, { w: "Schaukeln", c: "Aktion" }, { w: "Zittern", c: "Aktion" },
-  { w: "Gähnen", c: "Aktion" }, { w: "Umziehen", c: "Aktion" }, { w: "Einschlafen", c: "Aktion" },
+const PACK_REGISTRY = [
+  {
+    id:          'pack-basis',
+    file:        'packs/pack-basis.json',
+    name:        'Basispaket',
+    description: '150 alltägliche Wörter für den Einstieg',
+    icon:        '🎯',
+    color:       '#1dff8a',
+  },
+  // Future packs: add entries here, drop the JSON in /packs/
 ];
+
+// Loaded word arrays keyed by pack id
+const loadedPacks = {};
+
+// Which packs are enabled — persisted in localStorage
+function getEnabledPacks() {
+  try {
+    const stored = JSON.parse(localStorage.getItem('enabledPacks'));
+    if (Array.isArray(stored) && stored.length) return stored;
+  } catch(e) {}
+  return [PACK_REGISTRY[0].id]; // default: first pack on
+}
+function saveEnabledPacks(ids) {
+  localStorage.setItem('enabledPacks', JSON.stringify(ids));
+}
+
+async function loadPack(pack) {
+  if (loadedPacks[pack.id]) return loadedPacks[pack.id];
+  try {
+    const res  = await fetch(pack.file);
+    const data = await res.json();
+    loadedPacks[pack.id] = data.words;
+    return data.words;
+  } catch(e) {
+    console.warn('Could not load pack', pack.id, e);
+    return [];
+  }
+}
+
+async function buildWordPool() {
+  const enabled = getEnabledPacks();
+  const promises = PACK_REGISTRY
+    .filter(p => enabled.includes(p.id))
+    .map(p => loadPack(p));
+  const arrays = await Promise.all(promises);
+  return arrays.flat();
+}
+
+// Pre-load all packs in background on startup
+PACK_REGISTRY.forEach(p => loadPack(p));
 
 // ══════════════════════════════════════════════
 // STATE
@@ -654,6 +751,64 @@ document.getElementById('btn-plus').addEventListener('click', () => {
 updateTimerDisplay(60);
 
 // ══════════════════════════════════════════════
+// SETTINGS — pack toggle UI
+// ══════════════════════════════════════════════
+function renderSettings() {
+  const enabled = getEnabledPacks();
+  const grid    = document.getElementById('packs-grid');
+  const note    = document.getElementById('settings-note');
+
+  grid.innerHTML = PACK_REGISTRY.map(pack => {
+    const isOn    = enabled.includes(pack.id);
+    const words   = loadedPacks[pack.id];
+    const countTx = words ? `${words.length} Wörter` : 'Lädt…';
+    return `
+      <div class="pack-card ${isOn ? 'active' : ''}"
+           data-id="${pack.id}"
+           style="${isOn ? `border-color:${pack.color}` : ''}">
+        <div class="pack-icon">${pack.icon}</div>
+        <div class="pack-info">
+          <div class="pack-name" style="${isOn ? `color:${pack.color}` : ''}">${pack.name}</div>
+          <div class="pack-desc">${pack.description}</div>
+          <div class="pack-count">${countTx}</div>
+        </div>
+        <div class="pack-toggle"></div>
+      </div>`;
+  }).join('');
+
+  updateSettingsNote(enabled);
+
+  grid.querySelectorAll('.pack-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const id      = card.dataset.id;
+      let   current = getEnabledPacks();
+      if (current.includes(id)) {
+        if (current.length === 1) return; // keep at least one active
+        current = current.filter(x => x !== id);
+      } else {
+        current = [...current, id];
+      }
+      saveEnabledPacks(current);
+      renderSettings();
+    });
+  });
+}
+
+function updateSettingsNote(enabled) {
+  const total = enabled.reduce((sum, id) => {
+    return sum + (loadedPacks[id] ? loadedPacks[id].length : 0);
+  }, 0);
+  document.getElementById('settings-note').textContent =
+    total ? `${enabled.length} Paket${enabled.length > 1 ? 'e' : ''} aktiv · ${total} Wörter im Pool` : '';
+}
+
+document.getElementById('btn-settings').addEventListener('click', () => {
+  renderSettings();
+  show('screen-settings');
+});
+document.getElementById('btn-back').addEventListener('click', () => show('screen-home'));
+
+// ══════════════════════════════════════════════
 // START FLOW
 // ══════════════════════════════════════════════
 document.getElementById('btn-start').addEventListener('click', async () => {
@@ -705,8 +860,14 @@ function startCountdown() {
 // ══════════════════════════════════════════════
 // GAME
 // ══════════════════════════════════════════════
-function startGame() {
-  gameWords = shuffle(WORDS);
+async function startGame() {
+  const pool = await buildWordPool();
+  if (!pool.length) {
+    alert('Keine Wörter geladen. Bitte aktiviere mindestens ein Paket in den Einstellungen.');
+    show('screen-home');
+    return;
+  }
+  gameWords = shuffle(pool);
   wordIndex = 0;
   correctCount = 0;
   skipCount = 0;
