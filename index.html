@@ -570,9 +570,8 @@ let timerCircumference = 2 * Math.PI * 30; // r=30
 
 // Tilt state
 let tiltLocked = false;
-const TILT_THRESHOLD_UP   = 35;  // beta > +35 → skip (tilt back / up)
-const TILT_THRESHOLD_DOWN = -35; // beta < -35 → correct (tilt forward / down)
-const TILT_LOCK_MS = 1200;
+const TILT_THRESHOLD = 30;  // degrees deviation from baseline to trigger action
+let tiltBaseline = null;    // calibrated at game start
 
 // ══════════════════════════════════════════════
 // UTILS
@@ -763,19 +762,33 @@ function endGame() {
 }
 
 // ── TILT ──
+// When held at the forehead (phone horizontal, screen facing outward):
+//   gamma = rotation around phone's long axis = player's forward/backward tilt ✓
+//   beta  = rotation around phone's short axis = player's left/right tilt (wrong axis)
+// Baseline is captured on first sensor reading so exact starting angle doesn't matter.
 let _tiltHandler = null;
 function listenTilt() {
-  _tiltHandler = (e) => {
-    if (tiltLocked || timeLeft <= 0) return;
-    const beta = e.beta; // front-back tilt: -180 to 180
-    if (beta === null) return;
+  let calibrated = false;
 
-    // Holding phone upright (~90°): normal
-    // Tilt forward (face down toward viewer): beta decreases → correct
-    // Tilt backward (top away): beta increases → skip
-    if (beta < TILT_THRESHOLD_DOWN) {
+  _tiltHandler = (e) => {
+    if (e.gamma === null || e.beta === null) return;
+
+    // Calibrate baseline from the first stable reading
+    if (!calibrated) {
+      tiltBaseline = { gamma: e.gamma, beta: e.beta };
+      calibrated = true;
+      return;
+    }
+
+    if (tiltLocked || timeLeft <= 0) return;
+
+    const dg = e.gamma - tiltBaseline.gamma; // forward/backward deviation
+
+    // Tilt forward  (nod "yes") → gamma goes more negative → correct
+    // Tilt backward (nod "no") → gamma goes more positive  → skip
+    if (dg < -TILT_THRESHOLD) {
       markWord('correct');
-    } else if (beta > TILT_THRESHOLD_UP && beta < 150) {
+    } else if (dg > TILT_THRESHOLD) {
       markWord('skip');
     }
   };
