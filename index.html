@@ -33,6 +33,8 @@
     color: var(--text);
     font-family: 'DM Sans', sans-serif;
     overflow: hidden;
+    position: fixed;
+    top: 0; left: 0;
     user-select: none;
   }
 
@@ -655,6 +657,13 @@ updateTimerDisplay(60);
 // START FLOW
 // ══════════════════════════════════════════════
 document.getElementById('btn-start').addEventListener('click', async () => {
+  // Request fullscreen on user gesture — hides browser chrome/address bar
+  const el = document.documentElement;
+  try {
+    if (el.requestFullscreen)            await el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+  } catch(e) { /* ignore — fallback to normal mode */ }
+
   // iOS requires explicit DeviceMotionEvent permission
   if (typeof DeviceMotionEvent !== 'undefined' &&
       typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -804,7 +813,7 @@ function endGame() {
 //   Tilt backward (screen toward sky)    → z rises  → ➡️  skip
 // Left/right roll only affects X/Y, never Z.
 
-const TILT_THRESHOLD = 6.0;  // m/s² — ~35° tilt needed to trigger
+const TILT_THRESHOLD = 7.5;  // m/s² — ~40° tilt needed to trigger
 let   baselineZ      = null; // set ONCE when game starts, never reset
 let _tiltHandler = null;
 
