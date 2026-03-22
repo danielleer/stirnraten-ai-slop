@@ -603,7 +603,6 @@ let timerCircumference = 2 * Math.PI * 30; // r=30
 
 // Tilt state
 let tiltLocked = false;
-const TILT_THRESHOLD = 30;
 
 // ══════════════════════════════════════════════
 // UTILS
@@ -794,51 +793,51 @@ function endGame() {
 }
 
 // ── TILT ──
-// Phone is locked landscape and held flat/horizontal at the forehead, screen facing outward.
-// In this position:
-//   beta  = rotation around the phone's SHORT axis (width) = forward/backward nod ✓
-//   gamma = rotation around the phone's LONG  axis (height) = left/right roll    ✗
+// We use the DeviceMotion API's accelerationIncludingGravity.z axis.
+// This is the axis perpendicular to the screen surface — no gimbal lock issues.
 //
-// With phone flat: beta ≈ 0.
-//   Tilt forward  (screen tips toward ground) → beta INCREASES → success
-//   Tilt backward (screen tips toward sky)    → beta DECREASES → skip
+// Phone held upright, screen facing audience:
+//   z ≈ 0  (gravity is along Y, not into/out of screen)
+//   Tilt forward  (screen tips toward ground) → z becomes negative  → ✅ correct
+//   Tilt backward (screen tips toward sky)    → z becomes positive  → ➡️  skip
 //
-// A baseline is captured from the first few averaged readings so the exact
-// starting angle doesn't matter.
+// Left/right roll changes X/Y but NOT Z, so it never accidentally triggers.
 let _tiltHandler = null;
 function listenTilt() {
   let samples = [];
-  let baselineBeta = null;
+  let baselineZ = null;
+  const NEEDED = 12;          // ~600ms of samples at 60hz before locking baseline
+  const THRESHOLD = 3.5;      // m/s² — requires ~21° tilt to trigger (robust but responsive)
 
   _tiltHandler = (e) => {
-    if (e.beta === null) return;
+    const g = e.accelerationIncludingGravity;
+    if (!g || g.z === null) return;
 
-    // Collect 5 samples then lock in baseline
-    if (baselineBeta === null) {
-      samples.push(e.beta);
-      if (samples.length >= 5) {
-        baselineBeta = samples.reduce((a, b) => a + b, 0) / samples.length;
+    // Phase 1: collect baseline from resting position
+    if (baselineZ === null) {
+      samples.push(g.z);
+      if (samples.length >= NEEDED) {
+        baselineZ = samples.reduce((a, b) => a + b, 0) / NEEDED;
       }
       return;
     }
 
     if (tiltLocked || timeLeft <= 0) return;
 
-    const db = e.beta - baselineBeta;
+    const dz = g.z - baselineZ;
 
-    // forward tilt  → screen toward ground → beta increases → correct
-    // backward tilt → screen toward sky    → beta decreases → skip
-    if (db > TILT_THRESHOLD) {
-      markWord('correct');
-    } else if (db < -TILT_THRESHOLD) {
-      markWord('skip');
+    if (dz < -THRESHOLD) {
+      markWord('correct');   // forward tilt → screen toward ground → z drops
+    } else if (dz > THRESHOLD) {
+      markWord('skip');      // backward tilt → screen toward sky → z rises
     }
   };
-  window.addEventListener('deviceorientation', _tiltHandler);
+
+  window.addEventListener('devicemotion', _tiltHandler);
 }
 
 function stopTilt() {
-  if (_tiltHandler) window.removeEventListener('deviceorientation', _tiltHandler);
+  if (_tiltHandler) window.removeEventListener('devicemotion', _tiltHandler);
 }
 
 // ══════════════════════════════════════════════
