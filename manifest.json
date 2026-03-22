@@ -4,7 +4,7 @@
   "description": "Das Stirn-Ratespiel auf deinem Handy",
   "start_url": "./index.html",
   "display": "fullscreen",
-  "orientation": "portrait",
+  "orientation": "landscape",
   "background_color": "#0d0d0d",
   "theme_color": "#0d0d0d",
   "icons": [
