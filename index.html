@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen"/>
+<meta name="apple-mobile-web-app-title" content="Stirnraten"/>
+<meta name="theme-color" content="#0d0d0d"/>
+<link rel="manifest" href="manifest.json"/>
+<title>Stirnraten</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;600&display=swap');
+
+  :root {
+    --bg: #0d0d0d;
+    --surface: #1a1a1a;
+    --border: #2e2e2e;
+    --text: #f0ece4;
+    --muted: #6b6b6b;
+    --green: #1dff8a;
+    --red: #ff3b5c;
+    --yellow: #ffd93d;
+    --blue: #4fc3f7;
+    --radius: 20px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%; width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 32px 24px;
+    transition: opacity .35s ease, transform .35s ease;
+  }
+  .screen.hidden { opacity: 0; pointer-events: none; transform: scale(.97); }
+
+  /* ── HOME ── */
+  #screen-home {
+    gap: 0;
+    background: var(--bg);
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(56px, 18vw, 88px);
+    letter-spacing: 4px;
+    line-height: 1;
+    color: var(--text);
+    text-align: center;
+  }
+  .logo span { color: var(--green); }
+  .tagline {
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  .divider {
+    width: 40px; height: 2px;
+    background: var(--border);
+    margin: 36px auto;
+  }
+
+  .timer-section { width: 100%; max-width: 360px; }
+  .timer-label {
+    font-size: 12px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 14px; text-align: center;
+  }
+  .timer-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 72px;
+    text-align: center;
+    color: var(--yellow);
+    line-height: 1;
+    letter-spacing: 2px;
+  }
+  .timer-display span { font-size: 28px; color: var(--muted); margin-left: 4px; }
+
+  .slider-row {
+    display: flex; align-items: center; gap: 16px; margin-top: 16px;
+  }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    flex: 1; height: 6px;
+    background: var(--border);
+    border-radius: 3px; outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--yellow);
+    box-shadow: 0 0 12px rgba(255,217,61,.5);
+    cursor: pointer;
+  }
+  .slider-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%; border: none;
+    background: var(--surface);
+    color: var(--text); font-size: 22px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .slider-btn:active { background: var(--border); }
+
+  .btn-start {
+    margin-top: 36px;
+    width: 100%; max-width: 360px;
+    padding: 20px;
+    background: var(--green);
+    color: #0d0d0d;
+    border: none; border-radius: var(--radius);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px; letter-spacing: 3px;
+    cursor: pointer;
+    box-shadow: 0 0 30px rgba(29,255,138,.25);
+    transition: transform .12s, box-shadow .12s;
+  }
+  .btn-start:active { transform: scale(.97); box-shadow: none; }
+
+  /* ── PERMISSION ── */
+  #screen-perm {
+    background: var(--bg);
+    gap: 20px; text-align: center;
+  }
+  .perm-icon { font-size: 64px; margin-bottom: 8px; }
+  .perm-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px; letter-spacing: 2px;
+  }
+  .perm-body { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 300px; }
+  .btn-perm {
+    margin-top: 8px;
+    padding: 16px 40px;
+    background: var(--blue);
+    color: #0d0d0d;
+    border: none; border-radius: var(--radius);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px; letter-spacing: 2px;
+    cursor: pointer;
+    transition: transform .12s;
+  }
+  .btn-perm:active { transform: scale(.97); }
+
+  /* ── COUNTDOWN ── */
+  #screen-countdown {
+    background: var(--bg);
+  }
+  .countdown-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(140px, 45vw, 220px);
+    color: var(--text);
+    animation: pulse 1s ease infinite;
+    letter-spacing: -4px;
+  }
+  @keyframes pulse {
+    0%,100% { transform: scale(1); opacity: 1; }
+    50%      { transform: scale(.92); opacity: .7; }
+  }
+
+  /* ── GAME ── */
+  #screen-game {
+    padding: 0;
+    background: var(--bg);
+  }
+
+  .game-wrap {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+
+  .game-top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px 0;
+    flex-shrink: 0;
+  }
+
+  .score-pill {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 6px 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .score-item { text-align: center; }
+  .score-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; line-height: 1;
+  }
+  .score-val.green { color: var(--green); }
+  .score-val.red   { color: var(--red); }
+  .score-dot { width: 1px; height: 28px; background: var(--border); }
+  .score-lbl { font-size: 9px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+
+  .timer-ring-wrap {
+    position: relative; width: 68px; height: 68px;
+  }
+  .timer-ring-wrap svg {
+    transform: rotate(-90deg);
+    width: 68px; height: 68px;
+  }
+  .timer-track { fill: none; stroke: var(--border); stroke-width: 4; }
+  .timer-fill  { fill: none; stroke: var(--yellow); stroke-width: 4;
+    stroke-linecap: round;
+    stroke-dasharray: 188;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset .5s linear, stroke .5s;
+  }
+  .timer-text {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; color: var(--yellow);
+  }
+
+  /* Word card - central area */
+  .card-area {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 24px;
+    position: relative;
+  }
+
+  .hint-arrow {
+    font-size: 13px; color: var(--muted);
+    letter-spacing: 2px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+    opacity: 0;
+    transition: opacity .3s;
+  }
+  .hint-arrow.visible { opacity: 1; }
+  .hint-up   { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); flex-direction: column; }
+  .hint-down { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); flex-direction: column-reverse; }
+  .arrow-icon { font-size: 20px; }
+
+  .word-card {
+    width: 100%;
+    max-width: 360px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    padding: 40px 32px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: background .2s, border-color .2s, transform .2s;
+  }
+  .word-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .word-card.correct { background: #0b3324; border-color: var(--green); }
+  .word-card.skip    { background: #2c1a0e; border-color: var(--red); }
+  .word-card.correct .word-text { color: var(--green); }
+  .word-card.skip    .word-text { color: var(--red); }
+
+  .word-category {
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 20px;
+  }
+  .word-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(44px, 14vw, 68px);
+    line-height: 1;
+    letter-spacing: 2px;
+    color: var(--text);
+    transition: color .2s;
+  }
+  .word-status {
+    margin-top: 20px;
+    font-size: 13px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--muted);
+    min-height: 20px;
+  }
+  .word-count {
+    margin-top: 12px;
+    font-size: 12px; color: var(--muted);
+  }
+
+  /* ── RESULT ── */
+  #screen-result {
+    background: var(--bg);
+    gap: 0; text-align: center;
+  }
+  .result-label {
+    font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 6px;
+  }
+  .result-score {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(90px, 28vw, 140px);
+    color: var(--green);
+    line-height: 1;
+    letter-spacing: -2px;
+  }
+  .result-sub { color: var(--muted); font-size: 14px; margin-top: 6px; }
+  .result-breakdown {
+    margin-top: 28px;
+    display: flex; gap: 16px; justify-content: center;
+  }
+  .breakdown-pill {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 24px; text-align: center;
+  }
+  .bp-val { font-family: 'Bebas Neue', sans-serif; font-size: 32px; }
+  .bp-lbl { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; }
+
+  .result-words {
+    margin-top: 24px; width: 100%; max-width: 360px;
+    max-height: 180px; overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .rw-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .rw-item:last-child { border-bottom: none; }
+  .rw-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .rw-dot.g { background: var(--green); }
+  .rw-dot.r { background: var(--red); }
+  .rw-word { flex: 1; margin-left: 10px; text-align: left; }
+  .rw-tag { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+
+  .btn-home {
+    margin-top: 28px;
+    width: 100%; max-width: 360px;
+    padding: 18px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px; letter-spacing: 2px;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .btn-home:active { border-color: var(--text); }
+
+  /* Tilt feedback overlay */
+  .tilt-flash {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .15s;
+    z-index: 99;
+  }
+  .tilt-flash.green-flash { background: rgba(29,255,138,.18); opacity: 1; }
+  .tilt-flash.red-flash   { background: rgba(255,59,92,.18); opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ── HOME ── -->
+<div class="screen" id="screen-home">
+  <div class="logo">STIRN<span>RATEN</span></div>
+  <div class="tagline">Das Wort-Rate-Spiel</div>
+  <div class="divider"></div>
+  <div class="timer-section">
+    <div class="timer-label">Spielzeit</div>
+    <div class="timer-display" id="timer-display">60<span>sek</span></div>
+    <div class="slider-row">
+      <button class="slider-btn" id="btn-minus">−</button>
+      <input type="range" id="timer-slider" min="20" max="180" step="5" value="60"/>
+      <button class="slider-btn" id="btn-plus">+</button>
+    </div>
+  </div>
+  <button class="btn-start" id="btn-start">SPIELEN</button>
+</div>
+
+<!-- ── PERMISSION ── -->
+<div class="screen hidden" id="screen-perm">
+  <div class="perm-icon">📱</div>
+  <div class="perm-title">Bewegungssensor</div>
+  <div class="perm-body">Stirnraten braucht Zugriff auf den Neigungssensor, damit du Wörter durch Kippen des Handys bestätigen oder überspringen kannst.</div>
+  <button class="btn-perm" id="btn-perm">ZUGRIFF ERLAUBEN</button>
+</div>
+
+<!-- ── COUNTDOWN ── -->
+<div class="screen hidden" id="screen-countdown">
+  <div class="countdown-num" id="countdown-num">3</div>
+</div>
+
+<!-- ── GAME ── -->
+<div class="screen hidden" id="screen-game">
+  <div class="game-wrap">
+    <div class="game-top-bar">
+      <div class="score-pill">
+        <div class="score-item">
+          <div class="score-val green" id="score-correct">0</div>
+          <div class="score-lbl">✓ Richtig</div>
+        </div>
+        <div class="score-dot"></div>
+        <div class="score-item">
+          <div class="score-val red" id="score-skip">0</div>
+          <div class="score-lbl">✗ Skip</div>
+        </div>
+      </div>
+      <div class="timer-ring-wrap">
+        <svg viewBox="0 0 68 68">
+          <circle class="timer-track" cx="34" cy="34" r="30"/>
+          <circle class="timer-fill" id="timer-ring" cx="34" cy="34" r="30"/>
+        </svg>
+        <div class="timer-text" id="game-timer-text">60</div>
+      </div>
+    </div>
+
+    <div class="card-area">
+      <div class="hint-arrow hint-up" id="hint-up">
+        <div class="arrow-icon">▲</div>
+        <div>Überspringen</div>
+      </div>
+
+      <div class="word-card" id="word-card">
+        <div class="word-category" id="word-category">Kategorie</div>
+        <div class="word-text" id="word-text">WORT</div>
+        <div class="word-status" id="word-status"></div>
+        <div class="word-count" id="word-count">Wort 1</div>
+      </div>
+
+      <div class="hint-arrow hint-down" id="hint-down">
+        <div class="arrow-icon">▼</div>
+        <div>Richtig!</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── RESULT ── -->
+<div class="screen hidden" id="screen-result">
+  <div class="result-label">Ergebnis</div>
+  <div class="result-score" id="result-score">0</div>
+  <div class="result-sub">Wörter erraten</div>
+  <div class="result-breakdown">
+    <div class="breakdown-pill">
+      <div class="bp-val" id="res-correct" style="color:var(--green)">0</div>
+      <div class="bp-lbl">Richtig</div>
+    </div>
+    <div class="breakdown-pill">
+      <div class="bp-val" id="res-skip" style="color:var(--red)">0</div>
+      <div class="bp-lbl">Übersprungen</div>
+    </div>
+    <div class="breakdown-pill">
+      <div class="bp-val" id="res-total" style="color:var(--muted)">0</div>
+      <div class="bp-lbl">Gesamt</div>
+    </div>
+  </div>
+  <div class="result-words" id="result-words"></div>
+  <button class="btn-home" id="btn-home">NOCHMAL SPIELEN</button>
+</div>
+
+<!-- Tilt Flash Overlay -->
+<div class="tilt-flash" id="tilt-flash"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// WORD LIST — German everyday words by category
+// ══════════════════════════════════════════════
+const WORDS = [
+  // Tiere
+  { w: "Elefant", c: "Tier" }, { w: "Pinguin", c: "Tier" }, { w: "Giraffe", c: "Tier" },
+  { w: "Krokodil", c: "Tier" }, { w: "Delfin", c: "Tier" }, { w: "Hamster", c: "Tier" },
+  { w: "Papagei", c: "Tier" }, { w: "Schildkröte", c: "Tier" }, { w: "Nashorn", c: "Tier" },
+  { w: "Flamingo", c: "Tier" }, { w: "Kaninchen", c: "Tier" }, { w: "Eichhörnchen", c: "Tier" },
+  { w: "Pferd", c: "Tier" }, { w: "Schmetterling", c: "Tier" }, { w: "Biene", c: "Tier" },
+  { w: "Oktopus", c: "Tier" }, { w: "Zebra", c: "Tier" }, { w: "Löwe", c: "Tier" },
+  { w: "Adler", c: "Tier" }, { w: "Wal", c: "Tier" }, { w: "Fledermaus", c: "Tier" },
+  { w: "Gorilla", c: "Tier" }, { w: "Fuchs", c: "Tier" }, { w: "Igel", c: "Tier" },
+  { w: "Hase", c: "Tier" }, { w: "Reh", c: "Tier" }, { w: "Wolf", c: "Tier" },
+
+  // Essen & Trinken
+  { w: "Spaghetti", c: "Essen" }, { w: "Schnitzel", c: "Essen" }, { w: "Ananas", c: "Essen" },
+  { w: "Schokolade", c: "Essen" }, { w: "Käsekuchen", c: "Essen" }, { w: "Brezel", c: "Essen" },
+  { w: "Marzipan", c: "Essen" }, { w: "Gulasch", c: "Essen" }, { w: "Waffel", c: "Essen" },
+  { w: "Erdbeere", c: "Essen" }, { w: "Pfannkuchen", c: "Essen" }, { w: "Avocado", c: "Essen" },
+  { w: "Wassermelone", c: "Essen" }, { w: "Brötchen", c: "Essen" }, { w: "Joghurt", c: "Essen" },
+  { w: "Apfelstrudel", c: "Essen" }, { w: "Tiramisu", c: "Essen" }, { w: "Currywurst", c: "Essen" },
+  { w: "Limo", c: "Essen" }, { w: "Espresso", c: "Essen" }, { w: "Smoothie", c: "Essen" },
+
+  // Berufe
+  { w: "Feuerwehrmann", c: "Beruf" }, { w: "Astronaut", c: "Beruf" }, { w: "Bäcker", c: "Beruf" },
+  { w: "Tischler", c: "Beruf" }, { w: "Pilot", c: "Beruf" }, { w: "Apotheker", c: "Beruf" },
+  { w: "Schauspieler", c: "Beruf" }, { w: "Elektriker", c: "Beruf" }, { w: "Briefträger", c: "Beruf" },
+  { w: "Tierarzt", c: "Beruf" }, { w: "Richter", c: "Beruf" }, { w: "Koch", c: "Beruf" },
+  { w: "Sänger", c: "Beruf" }, { w: "Lehrer", c: "Beruf" }, { w: "Gärtner", c: "Beruf" },
+  { w: "Zahnarzt", c: "Beruf" }, { w: "Detektiv", c: "Beruf" }, { w: "Kapitän", c: "Beruf" },
+
+  // Sport & Freizeit
+  { w: "Fallschirmspringen", c: "Sport" }, { w: "Bogenschießen", c: "Sport" }, { w: "Turnen", c: "Sport" },
+  { w: "Surfen", c: "Sport" }, { w: "Klettern", c: "Sport" }, { w: "Drachenfliegen", c: "Sport" },
+  { w: "Schachspielen", c: "Sport" }, { w: "Jonglieren", c: "Sport" }, { w: "Tischtennis", c: "Sport" },
+  { w: "Fechten", c: "Sport" }, { w: "Reiten", c: "Sport" }, { w: "Tanzen", c: "Sport" },
+  { w: "Angeln", c: "Sport" }, { w: "Rudern", c: "Sport" }, { w: "Boxen", c: "Sport" },
+
+  // Dinge im Haushalt
+  { w: "Waschmaschine", c: "Zuhause" }, { w: "Backofen", c: "Zuhause" }, { w: "Fernseher", c: "Zuhause" },
+  { w: "Kühlschrank", c: "Zuhause" }, { w: "Staubsauger", c: "Zuhause" }, { w: "Sofa", c: "Zuhause" },
+  { w: "Bügeleisen", c: "Zuhause" }, { w: "Vorhang", c: "Zuhause" }, { w: "Briefkasten", c: "Zuhause" },
+  { w: "Werkzeugkasten", c: "Zuhause" }, { w: "Lampe", c: "Zuhause" }, { w: "Thermometer", c: "Zuhause" },
+
+  // Orte
+  { w: "Leuchtturm", c: "Ort" }, { w: "Rathausplatz", c: "Ort" }, { w: "Friedhof", c: "Ort" },
+  { w: "Bahnhof", c: "Ort" }, { w: "Tierpark", c: "Ort" }, { w: "Schwimmbad", c: "Ort" },
+  { w: "Bibliothek", c: "Ort" }, { w: "Supermarkt", c: "Ort" }, { w: "Museum", c: "Ort" },
+  { w: "Kaufhaus", c: "Ort" }, { w: "Flughafen", c: "Ort" }, { w: "Schloss", c: "Ort" },
+  { w: "Kirche", c: "Ort" }, { w: "Stadion", c: "Ort" }, { w: "Strand", c: "Ort" },
+
+  // Fahrzeuge
+  { w: "U-Boot", c: "Fahrzeug" }, { w: "Heißluftballon", c: "Fahrzeug" }, { w: "Hubschrauber", c: "Fahrzeug" },
+  { w: "Straßenbahn", c: "Fahrzeug" }, { w: "Motorrad", c: "Fahrzeug" }, { w: "Traktor", c: "Fahrzeug" },
+  { w: "Formel-1-Auto", c: "Fahrzeug" }, { w: "Segelboot", c: "Fahrzeug" }, { w: "Seilbahn", c: "Fahrzeug" },
+  { w: "Dampflok", c: "Fahrzeug" }, { w: "Gondel", c: "Fahrzeug" },
+
+  // Natur
+  { w: "Vulkan", c: "Natur" }, { w: "Wasserfall", c: "Natur" }, { w: "Gletscher", c: "Natur" },
+  { w: "Regenbogen", c: "Natur" }, { w: "Blitzschlag", c: "Natur" }, { w: "Sanddüne", c: "Natur" },
+  { w: "Tropenhöhle", c: "Natur" }, { w: "Meerestiefe", c: "Natur" }, { w: "Tornado", c: "Natur" },
+  { w: "Geysir", c: "Natur" }, { w: "Lavastrom", c: "Natur" }, { w: "Schneeflocke", c: "Natur" },
+
+  // Film & TV
+  { w: "Roboter", c: "Film & TV" }, { w: "Vampir", c: "Film & TV" }, { w: "Pirat", c: "Film & TV" },
+  { w: "Zauberer", c: "Film & TV" }, { w: "Dinosaurier", c: "Film & TV" }, { w: "Zeitreise", c: "Film & TV" },
+  { w: "Superheld", c: "Film & TV" }, { w: "Mumie", c: "Film & TV" }, { w: "Alien", c: "Film & TV" },
+  { w: "Zirkus", c: "Film & TV" }, { w: "Schatzinsel", c: "Film & TV" },
+
+  // Alltag & Handlungen
+  { w: "Schnarchen", c: "Aktion" }, { w: "Gähnen", c: "Aktion" }, { w: "Niesen", c: "Aktion" },
+  { w: "Winken", c: "Aktion" }, { w: "Stolpern", c: "Aktion" }, { w: "Flüstern", c: "Aktion" },
+  { w: "Nasebohren", c: "Aktion" }, { w: "Schaukeln", c: "Aktion" }, { w: "Zittern", c: "Aktion" },
+  { w: "Gähnen", c: "Aktion" }, { w: "Umziehen", c: "Aktion" }, { w: "Einschlafen", c: "Aktion" },
+];
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let gameWords = [];
+let wordIndex = 0;
+let correctCount = 0;
+let skipCount = 0;
+let sessionResults = [];
+let gameDuration = 60;
+let gameTimer = null;
+let timeLeft = 60;
+let timerCircumference = 2 * Math.PI * 30; // r=30
+
+// Tilt state
+let tiltLocked = false;
+const TILT_THRESHOLD_UP   = 35;  // beta > +35 → skip (tilt back / up)
+const TILT_THRESHOLD_DOWN = -35; // beta < -35 → correct (tilt forward / down)
+const TILT_LOCK_MS = 1200;
+
+// ══════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    if (s.id === id) s.classList.remove('hidden');
+    else s.classList.add('hidden');
+  });
+}
+
+function flash(type) {
+  const el = document.getElementById('tilt-flash');
+  el.className = 'tilt-flash ' + type;
+  setTimeout(() => el.className = 'tilt-flash', 350);
+}
+
+// ══════════════════════════════════════════════
+// TIMER SLIDER
+// ══════════════════════════════════════════════
+const slider = document.getElementById('timer-slider');
+const timerDisplay = document.getElementById('timer-display');
+
+function updateTimerDisplay(val) {
+  gameDuration = val;
+  timerDisplay.innerHTML = val + '<span>sek</span>';
+}
+
+slider.addEventListener('input', () => updateTimerDisplay(+slider.value));
+document.getElementById('btn-minus').addEventListener('click', () => {
+  slider.value = Math.max(+slider.min, +slider.value - 5);
+  updateTimerDisplay(+slider.value);
+});
+document.getElementById('btn-plus').addEventListener('click', () => {
+  slider.value = Math.min(+slider.max, +slider.value + 5);
+  updateTimerDisplay(+slider.value);
+});
+updateTimerDisplay(60);
+
+// ══════════════════════════════════════════════
+// START FLOW
+// ══════════════════════════════════════════════
+document.getElementById('btn-start').addEventListener('click', async () => {
+  // iOS requires explicit DeviceMotionEvent permission
+  if (typeof DeviceMotionEvent !== 'undefined' &&
+      typeof DeviceMotionEvent.requestPermission === 'function') {
+    show('screen-perm');
+  } else {
+    startCountdown();
+  }
+});
+
+document.getElementById('btn-perm').addEventListener('click', async () => {
+  try {
+    const perm = await DeviceMotionEvent.requestPermission();
+    if (perm === 'granted') startCountdown();
+    else alert('Ohne Bewegungssensor kann das Spiel nicht funktionieren.');
+  } catch(e) {
+    // Fallback: try anyway
+    startCountdown();
+  }
+});
+
+function startCountdown() {
+  show('screen-countdown');
+  let n = 3;
+  const el = document.getElementById('countdown-num');
+  el.textContent = n;
+
+  const interval = setInterval(() => {
+    n--;
+    if (n <= 0) {
+      clearInterval(interval);
+      el.textContent = 'LOS!';
+      setTimeout(startGame, 700);
+    } else {
+      el.textContent = n;
+    }
+  }, 900);
+}
+
+// ══════════════════════════════════════════════
+// GAME
+// ══════════════════════════════════════════════
+function startGame() {
+  gameWords = shuffle(WORDS);
+  wordIndex = 0;
+  correctCount = 0;
+  skipCount = 0;
+  sessionResults = [];
+  timeLeft = gameDuration;
+  tiltLocked = false;
+
+  updateScoreUI();
+  showWord();
+  show('screen-game');
+  startGameTimer();
+  listenTilt();
+
+  // Show hints briefly
+  document.getElementById('hint-up').classList.add('visible');
+  document.getElementById('hint-down').classList.add('visible');
+  setTimeout(() => {
+    document.getElementById('hint-up').classList.remove('visible');
+    document.getElementById('hint-down').classList.remove('visible');
+  }, 3000);
+}
+
+function showWord() {
+  const entry = gameWords[wordIndex % gameWords.length];
+  document.getElementById('word-text').textContent = entry.w;
+  document.getElementById('word-category').textContent = entry.c;
+  document.getElementById('word-status').textContent = '';
+  document.getElementById('word-count').textContent = 'Wort ' + (wordIndex + 1);
+  const card = document.getElementById('word-card');
+  card.className = 'word-card';
+}
+
+function markWord(result) {
+  if (tiltLocked) return;
+  tiltLocked = true;
+
+  const entry = gameWords[wordIndex % gameWords.length];
+  const card = document.getElementById('word-card');
+
+  sessionResults.push({ word: entry.w, result });
+
+  if (result === 'correct') {
+    correctCount++;
+    card.classList.add('correct');
+    document.getElementById('word-status').textContent = '✓ Richtig!';
+    flash('green-flash');
+  } else {
+    skipCount++;
+    card.classList.add('skip');
+    document.getElementById('word-status').textContent = '→ Übersprungen';
+    flash('red-flash');
+  }
+
+  updateScoreUI();
+  wordIndex++;
+
+  setTimeout(() => {
+    if (timeLeft > 0) showWord();
+    tiltLocked = false;
+  }, 900);
+}
+
+function updateScoreUI() {
+  document.getElementById('score-correct').textContent = correctCount;
+  document.getElementById('score-skip').textContent    = skipCount;
+}
+
+// ── TIMER ──
+function startGameTimer() {
+  const ring = document.getElementById('timer-ring');
+  const txt  = document.getElementById('game-timer-text');
+  ring.style.strokeDashoffset = 0;
+  ring.style.stroke = 'var(--yellow)';
+
+  gameTimer = setInterval(() => {
+    timeLeft--;
+    txt.textContent = timeLeft;
+
+    const progress = timeLeft / gameDuration;
+    ring.style.strokeDashoffset = timerCircumference * (1 - progress);
+
+    if (progress <= 0.25) ring.style.stroke = 'var(--red)';
+    else if (progress <= 0.5) ring.style.stroke = 'var(--yellow)';
+
+    if (timeLeft <= 0) endGame();
+  }, 1000);
+}
+
+function endGame() {
+  clearInterval(gameTimer);
+  stopTilt();
+  showResult();
+}
+
+// ── TILT ──
+let _tiltHandler = null;
+function listenTilt() {
+  _tiltHandler = (e) => {
+    if (tiltLocked || timeLeft <= 0) return;
+    const beta = e.beta; // front-back tilt: -180 to 180
+    if (beta === null) return;
+
+    // Holding phone upright (~90°): normal
+    // Tilt forward (face down toward viewer): beta decreases → correct
+    // Tilt backward (top away): beta increases → skip
+    if (beta < TILT_THRESHOLD_DOWN) {
+      markWord('correct');
+    } else if (beta > TILT_THRESHOLD_UP && beta < 150) {
+      markWord('skip');
+    }
+  };
+  window.addEventListener('deviceorientation', _tiltHandler);
+}
+
+function stopTilt() {
+  if (_tiltHandler) window.removeEventListener('deviceorientation', _tiltHandler);
+}
+
+// ══════════════════════════════════════════════
+// RESULT
+// ══════════════════════════════════════════════
+function showResult() {
+  document.getElementById('result-score').textContent  = correctCount;
+  document.getElementById('res-correct').textContent   = correctCount;
+  document.getElementById('res-skip').textContent      = skipCount;
+  document.getElementById('res-total').textContent     = correctCount + skipCount;
+
+  const list = document.getElementById('result-words');
+  list.innerHTML = sessionResults.map(r => `
+    <div class="rw-item">
+      <div class="rw-dot ${r.result === 'correct' ? 'g' : 'r'}"></div>
+      <div class="rw-word">${r.word}</div>
+      <div class="rw-tag">${r.result === 'correct' ? 'Richtig' : 'Skip'}</div>
+    </div>
+  `).join('');
+
+  show('screen-result');
+}
+
+document.getElementById('btn-home').addEventListener('click', () => show('screen-home'));
+
+// ══════════════════════════════════════════════
+// SERVICE WORKER
+// ══════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+// ══════════════════════════════════════════════
+// PREVENT SCROLL/BOUNCE on iOS
+// ══════════════════════════════════════════════
+document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+</script>
+</body>
+</html>
