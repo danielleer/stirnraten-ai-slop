@@ -704,12 +704,17 @@ function startGame() {
   sessionResults = [];
   timeLeft = gameDuration;
   tiltLocked = false;
+  baselineZ = null;
 
   updateScoreUI();
   showWord();
   show('screen-game');
-  startGameTimer();
-  listenTilt();
+
+  // Calibrate baseline first (≈750ms), then start timer and tilt listener
+  calibrateBaseline(() => {
+    startGameTimer();
+    listenTilt();
+  });
 
   // Show hints briefly
   document.getElementById('hint-up').classList.add('visible');
@@ -793,46 +798,45 @@ function endGame() {
 }
 
 // ── TILT ──
-// We use the DeviceMotion API's accelerationIncludingGravity.z axis.
-// This is the axis perpendicular to the screen surface — no gimbal lock issues.
-//
-// Phone held upright, screen facing audience:
-//   z ≈ 0  (gravity is along Y, not into/out of screen)
-//   Tilt forward  (screen tips toward ground) → z becomes negative  → ✅ correct
-//   Tilt backward (screen tips toward sky)    → z becomes positive  → ➡️  skip
-//
-// Left/right roll changes X/Y but NOT Z, so it never accidentally triggers.
-let _tiltHandler = null;
-function listenTilt() {
-  let samples = [];
-  let baselineZ = null;
-  const NEEDED = 12;          // ~600ms of samples at 60hz before locking baseline
-  const THRESHOLD = 3.5;      // m/s² — requires ~21° tilt to trigger (robust but responsive)
+// accelerationIncludingGravity.z is perpendicular to the screen — no gimbal lock.
+// Phone upright, screen facing audience: z ≈ 0
+//   Tilt forward  (screen toward ground) → z drops  → ✅ correct
+//   Tilt backward (screen toward sky)    → z rises  → ➡️  skip
+// Left/right roll only affects X/Y, never Z.
 
+const TILT_THRESHOLD = 6.0;  // m/s² — ~35° tilt needed to trigger
+let   baselineZ      = null; // set ONCE when game starts, never reset
+let _tiltHandler = null;
+
+function calibrateBaseline(callback) {
+  // Collect 15 samples (~750ms) to get a stable resting Z, then call callback
+  const samples = [];
+  const handler = (e) => {
+    const g = e.accelerationIncludingGravity;
+    if (!g || g.z === null) return;
+    samples.push(g.z);
+    if (samples.length >= 15) {
+      window.removeEventListener('devicemotion', handler);
+      baselineZ = samples.reduce((a, b) => a + b, 0) / samples.length;
+      callback();
+    }
+  };
+  window.addEventListener('devicemotion', handler);
+}
+
+function listenTilt() {
   _tiltHandler = (e) => {
+    if (tiltLocked || timeLeft <= 0 || baselineZ === null) return;
     const g = e.accelerationIncludingGravity;
     if (!g || g.z === null) return;
 
-    // Phase 1: collect baseline from resting position
-    if (baselineZ === null) {
-      samples.push(g.z);
-      if (samples.length >= NEEDED) {
-        baselineZ = samples.reduce((a, b) => a + b, 0) / NEEDED;
-      }
-      return;
-    }
-
-    if (tiltLocked || timeLeft <= 0) return;
-
     const dz = g.z - baselineZ;
-
-    if (dz < -THRESHOLD) {
-      markWord('correct');   // forward tilt → screen toward ground → z drops
-    } else if (dz > THRESHOLD) {
-      markWord('skip');      // backward tilt → screen toward sky → z rises
+    if (dz < -TILT_THRESHOLD) {
+      markWord('correct');
+    } else if (dz > TILT_THRESHOLD) {
+      markWord('skip');
     }
   };
-
   window.addEventListener('devicemotion', _tiltHandler);
 }
 
