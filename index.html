@@ -603,8 +603,7 @@ let timerCircumference = 2 * Math.PI * 30; // r=30
 
 // Tilt state
 let tiltLocked = false;
-const TILT_THRESHOLD = 30;  // degrees deviation from baseline to trigger action
-let tiltBaseline = null;    // calibrated at game start
+const TILT_THRESHOLD = 30;
 
 // ══════════════════════════════════════════════
 // UTILS
@@ -795,33 +794,43 @@ function endGame() {
 }
 
 // ── TILT ──
-// When held at the forehead (phone horizontal, screen facing outward):
-//   gamma = rotation around phone's long axis = player's forward/backward tilt ✓
-//   beta  = rotation around phone's short axis = player's left/right tilt (wrong axis)
-// Baseline is captured on first sensor reading so exact starting angle doesn't matter.
+// Phone is locked landscape and held flat/horizontal at the forehead, screen facing outward.
+// In this position:
+//   beta  = rotation around the phone's SHORT axis (width) = forward/backward nod ✓
+//   gamma = rotation around the phone's LONG  axis (height) = left/right roll    ✗
+//
+// With phone flat: beta ≈ 0.
+//   Tilt forward  (screen tips toward ground) → beta INCREASES → success
+//   Tilt backward (screen tips toward sky)    → beta DECREASES → skip
+//
+// A baseline is captured from the first few averaged readings so the exact
+// starting angle doesn't matter.
 let _tiltHandler = null;
 function listenTilt() {
-  let calibrated = false;
+  let samples = [];
+  let baselineBeta = null;
 
   _tiltHandler = (e) => {
-    if (e.gamma === null || e.beta === null) return;
+    if (e.beta === null) return;
 
-    // Calibrate baseline from the first stable reading
-    if (!calibrated) {
-      tiltBaseline = { gamma: e.gamma, beta: e.beta };
-      calibrated = true;
+    // Collect 5 samples then lock in baseline
+    if (baselineBeta === null) {
+      samples.push(e.beta);
+      if (samples.length >= 5) {
+        baselineBeta = samples.reduce((a, b) => a + b, 0) / samples.length;
+      }
       return;
     }
 
     if (tiltLocked || timeLeft <= 0) return;
 
-    const dg = e.gamma - tiltBaseline.gamma; // forward/backward deviation
+    const db = e.beta - baselineBeta;
 
-    // Tilt forward  (nod "yes") → gamma goes more negative → correct
-    // Tilt backward (nod "no") → gamma goes more positive  → skip
-    if (dg < -TILT_THRESHOLD) {
+    // forward tilt  → screen toward ground → beta increases → correct
+    // backward tilt → screen toward sky    → beta decreases → skip
+    if (db > TILT_THRESHOLD) {
       markWord('correct');
-    } else if (dg > TILT_THRESHOLD) {
+    } else if (db < -TILT_THRESHOLD) {
       markWord('skip');
     }
   };
